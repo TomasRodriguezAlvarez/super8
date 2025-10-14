@@ -5,75 +5,150 @@ class DetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final args = ModalRoute.of(context)!.settings.arguments as Map?;
-    final nombre = args?['nombre'] ?? 'Desconocido';
-    final pesoTon = args?['pesoTon'] ?? '?';
-    final largoM = args?['largoM'] ?? '?';
-    final periodo = args?['periodo'] ?? '---';
-    final dieta = args?['dieta'] ?? '---';
+    final f = (ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?) ?? {};
+    double imc(num pesoKg, num alturaM) =>
+        alturaM == 0 ? 0 : double.parse((pesoKg / (alturaM * alturaM)).toStringAsFixed(1));
+
+    final chips = <Widget>[
+      _Chip(label: 'Edad: ${f['edad']}'),
+      _Chip(label: 'Sexo: ${f['sexo']}'),
+      _Chip(label: 'Altura: ${f['alturaM']} m'),
+      _Chip(label: 'Peso: ${f['pesoKg']} kg'),
+      _Chip(label: 'IMC: ${imc(f['pesoKg'] ?? 0, f['alturaM'] ?? 0)}'),
+    ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(nombre.toString())),
+      appBar: AppBar(title: Text(f['nombre'] ?? 'Ficha médica')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              nombre.toString(),
-              style: Theme.of(context).textTheme.headlineMedium,
+            _Section(
+              title: 'Datos del paciente',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(f['nombre'] ?? '', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 6),
+                  Text('RUT: ${f['rut'] ?? '-'}'),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 8, runSpacing: 8, children: chips),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-                Icon(Icons.grass, color: Colors.green[700]),
-                const SizedBox(width: 8),
-                Text('Dieta: $dieta'),
-              ],
+            _Section(
+              title: 'Atención',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Row(icon: Icons.person, text: 'Doctor/a: ${f['doctor']}'),
+                  _Row(icon: Icons.local_hospital, text: 'Especialidad: ${f['especialidad']}'),
+                  _Row(icon: Icons.event, text: 'Fecha: ${f['fechaAtencion']}'),
+                  _Row(icon: Icons.assignment, text: 'Diagnóstico: ${f['diagnostico']}'),
+                ],
+              ),
             ),
-            Row(
-              children: [
-                Icon(Icons.access_time, color: Colors.brown[700]),
-                const SizedBox(width: 8),
-                Text('Período: $periodo'),
-              ],
-            ),
-            Row(
-              children: [
-                Icon(Icons.straighten, color: Colors.blue[700]),
-                const SizedBox(width: 8),
-                Text('Largo: $largoM m'),
-              ],
-            ),
-            Row(
-              children: [
-                Icon(Icons.fitness_center, color: Colors.red[700]),
-                const SizedBox(width: 8),
-                Text('Peso: $pesoTon toneladas'),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-            Text(
-              'El $nombre fue uno de los dinosaurios más conocidos del periodo $periodo. '
-              'Su dieta era principalmente $dieta y alcanzaba hasta $largoM metros de largo. '
-              'Pesaba alrededor de $pesoTon toneladas.',
-              textAlign: TextAlign.justify,
-              style: const TextStyle(fontSize: 16),
-            ),
-
-            const SizedBox(height: 30),
+            if ((f['medicamentos'] as List?)?.isNotEmpty ?? false)
+              _Section(
+                title: 'Medicamentos',
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (f['medicamentos'] as List)
+                      .map<Widget>((m) => _Chip(label: m.toString()))
+                      .toList(),
+                ),
+              ),
+            if ((f['alergias'] as List?)?.isNotEmpty ?? false)
+              _Section(
+                title: 'Alergias',
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (f['alergias'] as List)
+                      .map<Widget>((a) => _Chip(label: a.toString(), icon: Icons.warning_amber))
+                      .toList(),
+                ),
+              ),
+            if ((f['preexistencias'] as List?)?.isNotEmpty ?? false)
+              _Section(
+                title: 'Preexistencias',
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (f['preexistencias'] as List)
+                      .map<Widget>((p) => _Chip(label: p.toString()))
+                      .toList(),
+                ),
+              ),
+            if ((f['notas'] as String?)?.isNotEmpty ?? false)
+              _Section(
+                title: 'Notas',
+                child: Text(f['notas']),
+              ),
+            const SizedBox(height: 16),
             Center(
               child: FilledButton.icon(
                 icon: const Icon(Icons.arrow_back),
                 label: const Text('Volver'),
                 onPressed: () => Navigator.pop(context),
               ),
-            ),
+            )
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Section extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _Section({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          child,
+        ]),
+      ),
+    );
+  }
+}
+
+class _Row extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Row({required this.icon, required this.text});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 8),
+        Expanded(child: Text(text)),
+      ]),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  const _Chip({required this.label, this.icon});
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: icon != null ? Icon(icon, size: 18) : null,
+      label: Text(label),
     );
   }
 }

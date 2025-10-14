@@ -1,0 +1,53 @@
+[
+  {
+    "id": 1,
+    "rut": "22.333.444-5",
+    "nombre": "Ana Morales Díaz",
+    "sexo": "Femenino",
+    "edad": 36,
+    "alturaM": 1.65,
+    "pesoKg": 62.3,
+    "doctor": "Dra. Patricia León",
+    "especialidad": "Medicina General",
+    "fechaAtencion": "2025-09-25",
+    "diagnostico": "Rinitis alérgica",
+    "medicamentos": ["Loratadina 10 mg", "Spray nasal"],
+    "alergias": ["Penicilina"],
+    "preexistencias": [],
+    "notas": "Control en 2 semanas. Buena respuesta al tratamiento."
+  },
+  {
+    "id": 2,
+    "rut": "19.012.345-6",
+    "nombre": "Roberto Castillo",
+    "sexo": "Masculino",
+    "edad": 49,
+    "alturaM": 1.78,
+    "pesoKg": 94.5,
+    "doctor": "Dr. Roberto Castillo",
+    "especialidad": "Traumatología",
+    "fechaAtencion": "2025-09-18",
+    "diagnostico": "Lumbalgia mecánica",
+    "medicamentos": ["Paracetamol 1 g c/8h", "Relajante muscular"],
+    "alergias": [],
+    "preexistencias": ["Hipertensión"],
+    "notas": "Kinesioterapia 2x semana por 4 semanas. Baja de peso recomendada."
+  },
+  {
+    "id": 3,
+    "rut": "13.444.555-6",
+    "nombre": "Pedro Sánchez Ruiz",
+    "sexo": "Masculino",
+    "edad": 27,
+    "alturaM": 1.82,
+    "pesoKg": 78.2,
+    "doctor": "Dra. Patricia León",
+    "especialidad": "Medicina General",
+    "fechaAtencion": "2025-09-10",
+    "diagnostico": "Gastroenteritis aguda",
+    "medicamentos": ["Hidratación oral", "Dieta blanda"],
+    "alergias": ["Mariscos"],
+    "preexistencias": [],
+    "notas": "Signos de alarma explicados. Control si persiste >48h."
+  }
+]
