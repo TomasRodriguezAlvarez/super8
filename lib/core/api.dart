@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class Api {
-  static const String baseUrl = 'http://127.0.0.1:3000';
+  static const String baseUrl = 'http://localhost:3000';
+
   // En Android Emulator: 'http://10.0.2.2:3000'
 
   static Future<Map<String, dynamic>> _get(String path, [Map<String, String>? q]) async {
