@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'screens/home_page.dart';
-import 'screens/detail_page.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -16,12 +17,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorSchemeSeed: Colors.teal,
       ),
-      // Ruta inicial y rutas con nombre
-      initialRoute: '/',
-      routes: {
-        '/': (_) => const HomePage(),
-        '/detalle': (_) => const DetailPage(),
-      },
+      home: const HomePage(),
     );
   }
 }

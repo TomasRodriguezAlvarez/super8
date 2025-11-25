@@ -1,145 +1,163 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../core/api.dart';
-import '../models/ficha.dart';
+import 'ficha_form_page.dart';
 
 class DetailPage extends StatefulWidget {
-  const DetailPage({super.key});
+  final int pacienteId;
+
+  const DetailPage({super.key, required this.pacienteId});
+
   @override
   State<DetailPage> createState() => _DetailPageState();
 }
 
 class _DetailPageState extends State<DetailPage> {
-  late Future<FichaDetalle> _future;
-
-  Future<FichaDetalle> _load(int id) async {
-    final raw = await Api.fichaDetalle(id);
-    return FichaDetalle.fromJson(raw);
-  }
+  Map<String, dynamic>? _ficha;
+  bool _loading = true;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final id = ModalRoute.of(context)!.settings.arguments as int;
-    _future = _load(id);
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final data = await Api.getFicha(widget.pacienteId);
+      setState(() => _ficha = data);
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error: $e')));
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _eliminar() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Eliminar ficha'),
+        content: const Text('¿Seguro que deseas eliminar este paciente?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true) {
+      await Api.deleteFicha(widget.pacienteId);
+      if (mounted) Navigator.pop(context, true); // volver y recargar lista
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Ficha médica')),
-      body: FutureBuilder<FichaDetalle>(
-        future: _future,
-        builder: (_, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
-          final f = snap.data!;
-          List<String> alergias = [];
-          List<String> preexist = [];
-          try {
-            final a = f.alergiasJson != null ? json.decode(f.alergiasJson!) : [];
-            final p = f.condicionesJson != null ? json.decode(f.condicionesJson!) : [];
-            alergias = (a as List).map((e) => (e['alergia'] ?? e.toString()).toString()).toList();
-            preexist = (p as List).map((e) => (e['condicion'] ?? e.toString()).toString()).toList();
-          } catch (_) {}
+    final f = _ficha;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(f.nombreCompleto, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 8),
-                Text('Identificación: ${f.numeroIdentificacion}'),
-                const SizedBox(height: 4),
-                Wrap(spacing: 8, runSpacing: 8, children: [
-                  Chip(label: Text('Género: ${f.genero}')),
-                  Chip(label: Text('Sangre: ${f.tipoSangre}')),
-                  if (f.email != null) Chip(label: Text('Email: ${f.email}')),
-                  if (f.telefono != null) Chip(label: Text('Tel: ${f.telefono}')),
-                  Chip(label: Text('Ficha: ${f.numeroFicha}')),
-                ]),
-                const SizedBox(height: 16),
-                if (alergias.isNotEmpty)
-                  _Section(title: 'Alergias', child: _BulletList(items: alergias)),
-                if (preexist.isNotEmpty)
-                  _Section(title: 'Preexistencias', child: _BulletList(items: preexist)),
-                _Section(
-                  title: 'Consultas recientes',
-                  child: f.consultas.isEmpty
-                      ? const Text('Sin consultas registradas.')
-                      : Column(
-                          children: f.consultas.map((c) {
-                            final fecha = c['fecha_consulta']?.toString() ?? '';
-                            final motivo = c['motivo']?.toString() ?? '';
-                            final estado = c['estado']?.toString() ?? '';
-                            return ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.event_note),
-                              title: Text(motivo),
-                              subtitle: Text(fecha),
-                              trailing: Chip(label: Text(estado)),
-                            );
-                          }).toList(),
-                        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ficha médica'),
+        actions: f == null
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () async {
+                    final recargar = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FichaFormPage(ficha: f),
+                      ),
+                    );
+                    if (recargar == true) {
+                      _load();
+                    }
+                  },
                 ),
-                const SizedBox(height: 16),
-                Center(
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Volver'),
-                    onPressed: () => Navigator.pop(context),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: _eliminar,
                 ),
               ],
-            ),
-          );
-        },
       ),
-    );
-  }
-}
-
-class _Section extends StatelessWidget {
-  final String title;
-  final Widget child;
-  const _Section({required this.title, required this.child});
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BulletList extends StatelessWidget {
-  final List<String> items;
-  const _BulletList({required this.items});
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: items
-          .map((e) => Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('•  '),
-                  Expanded(child: Text(e)),
-                ],
-              ))
-          .toList(),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : f == null
+              ? const Center(child: Text('No se encontró la ficha'))
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${f['nombres']} ${f['apellidos']}',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Identificación: ${f['numero_identificacion'] ?? ''}'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          Chip(label: Text('Género: ${f['genero'] ?? '-'}')),
+                          Chip(
+                              label:
+                                  Text('Sangre: ${f['tipo_sangre'] ?? '-'}')),
+                          Chip(
+                              label:
+                                  Text('Email: ${f['email'] ?? 'sin email'}')),
+                          Chip(
+                              label: Text(
+                                  'Tel: ${f['telefono'] ?? 'sin teléfono'}')),
+                          Chip(
+                              label: Text(
+                                  'Ficha: ${f['numero_ficha'] ?? 'sin ficha'}')),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Consultas recientes',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: (f['consultas'] as List).isEmpty
+                            ? const Text('Sin consultas registradas.')
+                            : ListView.builder(
+                                itemCount: (f['consultas'] as List).length,
+                                itemBuilder: (context, i) {
+                                  final c = (f['consultas'] as List)[i];
+                                  return ListTile(
+                                    title: Text(
+                                        c['motivo']?.toString() ?? 'Consulta'),
+                                    subtitle: Text(
+                                        c['fecha_consulta']?.toString() ?? ''),
+                                    trailing: Text(c['estado']?.toString() ?? ''),
+                                  );
+                                },
+                              ),
+                      ),
+                      const SizedBox(height: 16),
+                      Center(
+                        child: FilledButton.icon(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.arrow_back),
+                          label: const Text('Volver'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 }

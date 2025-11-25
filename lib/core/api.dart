@@ -2,54 +2,65 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class Api {
-  static const String baseUrl = 'http://localhost:3000';
+  static const String _baseUrl = 'http://localhost:3000';
 
-  // En Android Emulator: 'http://10.0.2.2:3000'
-
-  static Future<Map<String, dynamic>> _get(String path, [Map<String, String>? q]) async {
-    final uri = Uri.parse('$baseUrl$path').replace(queryParameters: q);
-    print('➡️ GET $uri');
-    final res = await http.get(uri).timeout(const Duration(seconds: 15));
-    print('⬅️ ${res.statusCode} ${res.reasonPhrase}');
-    if (res.statusCode != 200) {
-      throw Exception('GET $path -> ${res.statusCode} ${res.body}');
+  // LISTAR
+  static Future<List<dynamic>> getFichas({String search = ''}) async {
+    final uri = Uri.parse(
+        '$_baseUrl/fichas?search=$search&page=1&pageSize=200'); // ajusta si quieres
+    final res = await http.get(uri);
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body) as List;
+    } else {
+      throw Exception('Error cargando fichas: ${res.statusCode}');
     }
-    return json.decode(res.body) as Map<String, dynamic>;
   }
 
-  static Future<List<dynamic>> _getList(String path, [Map<String, String>? q]) async {
-    final uri = Uri.parse('$baseUrl$path').replace(queryParameters: q);
-    print('➡️ GET $uri');
-    final res = await http.get(uri).timeout(const Duration(seconds: 15));
-    print('⬅️ ${res.statusCode} ${res.reasonPhrase}');
-    if (res.statusCode != 200) {
-      throw Exception('GET $path -> ${res.statusCode} ${res.body}');
+  // OBTENER 
+  static Future<Map<String, dynamic>> getFicha(int id) async {
+    final res = await http.get(Uri.parse('$_baseUrl/fichas/$id'));
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Error cargando ficha: ${res.statusCode}');
     }
-    final data = json.decode(res.body);
-    if (data is List) return data;
-    if (data is Map && data['items'] is List) return data['items'];
-    throw Exception('Formato inesperado en $path');
   }
 
-  static Future<List<Map<String, dynamic>>> fichas({
-    String search = '',
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    final list = await _getList('/fichas', {
-      'search': search,
-      'page': '$page',
-      'pageSize': '$pageSize',
-    });
-    return list.cast<Map<String, dynamic>>();
+  // CREAR
+  static Future<Map<String, dynamic>> createFicha(
+      Map<String, dynamic> data) async {
+    final res = await http.post(
+      Uri.parse('$_baseUrl/fichas'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    if (res.statusCode == 201) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Error creando ficha: ${res.statusCode} ${res.body}');
+    }
   }
 
-  static Future<Map<String, dynamic>> fichaDetalle(int id) async {
-    return _get('/fichas/$id');
+  // ACTUALIZAR
+  static Future<Map<String, dynamic>> updateFicha(
+      int id, Map<String, dynamic> data) async {
+    final res = await http.put(
+      Uri.parse('$_baseUrl/fichas/$id'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(data),
+    );
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Error actualizando ficha: ${res.statusCode}');
+    }
   }
 
-  static Future<bool> health() async {
-    final data = await _get('/health');
-    return data['db'] == true;
+  // ELIMINAR
+  static Future<void> deleteFicha(int id) async {
+    final res = await http.delete(Uri.parse('$_baseUrl/fichas/$id'));
+    if (res.statusCode != 200) {
+      throw Exception('Error eliminando ficha: ${res.statusCode}');
+    }
   }
 }
