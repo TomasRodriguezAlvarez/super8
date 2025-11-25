@@ -14,150 +14,239 @@ class DetailPage extends StatefulWidget {
 class _DetailPageState extends State<DetailPage> {
   Map<String, dynamic>? _ficha;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadDetalle();
   }
 
-  Future<void> _load() async {
-    setState(() => _loading = true);
+  Future<void> _loadDetalle() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
+      // 👇 usa tu API real
       final data = await Api.getFicha(widget.pacienteId);
-      setState(() => _ficha = data);
+      setState(() {
+        _ficha = data;
+      });
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      setState(() {
+        _error = e.toString();
+      });
     } finally {
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
-  Future<void> _eliminar() async {
-    final ok = await showDialog<bool>(
+  Future<void> _editarFicha() async {
+    if (_ficha == null) return;
+
+    final recargar = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FichaFormPage(ficha: _ficha!), // tu form de edición
+      ),
+    );
+
+    if (recargar == true) {
+      await _loadDetalle();        // refrescar detalle
+      if (!mounted) return;
+      Navigator.pop(context, true); // avisar al HomePage para que recargue lista
+    }
+  }
+
+  Future<void> _eliminarFicha() async {
+    final confirmar = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (context) => AlertDialog(
         title: const Text('Eliminar ficha'),
-        content: const Text('¿Seguro que deseas eliminar este paciente?'),
+        content: const Text(
+            '¿Seguro que quieres eliminar esta ficha y el paciente asociado?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
     );
 
-    if (ok == true) {
-      await Api.deleteFicha(widget.pacienteId);
-      if (mounted) Navigator.pop(context, true); // volver y recargar lista
+    if (confirmar == true) {
+      try {
+        await Api.deleteFicha(widget.pacienteId);
+        if (!mounted) return;
+        Navigator.pop(context, true); // volver a la lista y recargar
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error eliminando ficha: $e')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final f = _ficha;
+    final color = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ficha médica'),
-        actions: f == null
-            ? null
-            : [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () async {
-                    final recargar = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => FichaFormPage(ficha: f),
-                      ),
-                    );
-                    if (recargar == true) {
-                      _load();
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: _eliminar,
-                ),
-              ],
+        actions: [
+          IconButton(
+            tooltip: 'Editar ficha',
+            icon: const Icon(Icons.edit),
+            onPressed: _ficha == null ? null : _editarFicha,
+          ),
+          IconButton(
+            tooltip: 'Eliminar ficha',
+            icon: const Icon(Icons.delete),
+            onPressed: _eliminarFicha,
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : f == null
-              ? const Center(child: Text('No se encontró la ficha'))
-              : Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${f['nombres']} ${f['apellidos']}',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text('Identificación: ${f['numero_identificacion'] ?? ''}'),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+          : _error != null
+              ? Center(child: Text('Error: $_error'))
+              : _ficha == null
+                  ? const Center(child: Text('Ficha no encontrada'))
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Chip(label: Text('Género: ${f['genero'] ?? '-'}')),
-                          Chip(
-                              label:
-                                  Text('Sangre: ${f['tipo_sangre'] ?? '-'}')),
-                          Chip(
-                              label:
-                                  Text('Email: ${f['email'] ?? 'sin email'}')),
-                          Chip(
-                              label: Text(
-                                  'Tel: ${f['telefono'] ?? 'sin teléfono'}')),
-                          Chip(
-                              label: Text(
-                                  'Ficha: ${f['numero_ficha'] ?? 'sin ficha'}')),
+                          // Nombre grande
+                          Text(
+                            '${_ficha!['nombres']} ${_ficha!['apellidos']}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Identificación: ${_ficha!['numero_identificacion']}',
+                          ),
+                          const SizedBox(height: 12),
+
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Chip(
+                                avatar: const Icon(Icons.person, size: 18),
+                                label: Text(
+                                    'Género: ${_ficha!['genero'] ?? '-'}'),
+                              ),
+                              Chip(
+                                avatar:
+                                    const Icon(Icons.bloodtype, size: 18),
+                                label: Text(
+                                    'Sangre: ${_ficha!['tipo_sangre'] ?? '-'}'),
+                              ),
+                              Chip(
+                                avatar:
+                                    const Icon(Icons.folder_open, size: 18),
+                                label: Text(
+                                    'Ficha: ${_ficha!['numero_ficha'] ?? '-'}'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Datos de contacto
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Contacto',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: color.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text('Email: ${_ficha!['email'] ?? '-'}'),
+                                  Text(
+                                      'Teléfono: ${_ficha!['telefono'] ?? '-'}'),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Alergias / condiciones
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Alergias',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: color.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _ficha!['alergias']?.toString().isNotEmpty ==
+                                            true
+                                        ? _ficha!['alergias'].toString()
+                                        : 'Sin alergias registradas',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Condiciones crónicas',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: color.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _ficha!['condiciones_cronicas']
+                                                ?.toString()
+                                                .isNotEmpty ==
+                                            true
+                                        ? _ficha!['condiciones_cronicas']
+                                            .toString()
+                                        : 'Sin condiciones registradas',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Consultas recientes',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: (f['consultas'] as List).isEmpty
-                            ? const Text('Sin consultas registradas.')
-                            : ListView.builder(
-                                itemCount: (f['consultas'] as List).length,
-                                itemBuilder: (context, i) {
-                                  final c = (f['consultas'] as List)[i];
-                                  return ListTile(
-                                    title: Text(
-                                        c['motivo']?.toString() ?? 'Consulta'),
-                                    subtitle: Text(
-                                        c['fecha_consulta']?.toString() ?? ''),
-                                    trailing: Text(c['estado']?.toString() ?? ''),
-                                  );
-                                },
-                              ),
-                      ),
-                      const SizedBox(height: 16),
-                      Center(
-                        child: FilledButton.icon(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back),
-                          label: const Text('Volver'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
     );
   }
 }
