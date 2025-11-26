@@ -28,7 +28,6 @@ class _DetailPageState extends State<DetailPage> {
       _error = null;
     });
     try {
-      // 👇 usa tu API real
       final data = await Api.getFicha(widget.pacienteId);
       setState(() {
         _ficha = data;
@@ -50,14 +49,14 @@ class _DetailPageState extends State<DetailPage> {
     final recargar = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => FichaFormPage(ficha: _ficha!), // tu form de edición
+        builder: (_) => FichaFormPage(ficha: _ficha!),
       ),
     );
 
     if (recargar == true) {
-      await _loadDetalle();        // refrescar detalle
+      await _loadDetalle();
       if (!mounted) return;
-      Navigator.pop(context, true); // avisar al HomePage para que recargue lista
+      Navigator.pop(context, true);
     }
   }
 
@@ -88,7 +87,7 @@ class _DetailPageState extends State<DetailPage> {
       try {
         await Api.deleteFicha(widget.pacienteId);
         if (!mounted) return;
-        Navigator.pop(context, true); // volver a la lista y recargar
+        Navigator.pop(context, true);
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -129,7 +128,6 @@ class _DetailPageState extends State<DetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Nombre grande
                           Text(
                             '${_ficha!['nombres']} ${_ficha!['apellidos']}',
                             style: Theme.of(context)
@@ -168,7 +166,6 @@ class _DetailPageState extends State<DetailPage> {
                           ),
                           const SizedBox(height: 16),
 
-                          // Datos de contacto
                           Card(
                             child: Padding(
                               padding: const EdgeInsets.all(12),
@@ -195,7 +192,6 @@ class _DetailPageState extends State<DetailPage> {
                           ),
                           const SizedBox(height: 12),
 
-                          // Alergias / condiciones
                           Card(
                             child: Padding(
                               padding: const EdgeInsets.all(12),

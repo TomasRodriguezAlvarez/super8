@@ -4,10 +4,9 @@ import 'package:http/http.dart' as http;
 class Api {
   static const String _baseUrl = 'http://localhost:3000';
 
-  // LISTAR
   static Future<List<dynamic>> getFichas({String search = ''}) async {
     final uri = Uri.parse(
-        '$_baseUrl/fichas?search=$search&page=1&pageSize=200'); // ajusta si quieres
+        '$_baseUrl/fichas?search=$search&page=1&pageSize=200');
     final res = await http.get(uri);
     if (res.statusCode == 200) {
       return jsonDecode(res.body) as List;

@@ -19,14 +19,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Datos
   List<dynamic> _allFichas = [];
   List<dynamic> _filteredFichas = [];
 
   bool _loading = true;
   String _search = '';
 
-  // Filtros avanzados
   bool _showFilters = false;
   String _filtroGenero = 'Todos';
   String _filtroSangre = 'Todos';
@@ -122,7 +120,6 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: const Text('Fichas médicas'),
         actions: [
-          // 👇 Botón modo oscuro / claro
           IconButton(
             tooltip: widget.isDarkMode ? 'Modo claro' : 'Modo oscuro',
             icon: Icon(
@@ -142,7 +139,6 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          // Búsqueda
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -158,7 +154,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // Toggle filtros
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(

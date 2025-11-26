@@ -18,7 +18,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   ThemeMode _themeMode = ThemeMode.light;
 
-  /// Alterna entre tema claro <-> oscuro
   void _toggleTheme() {
     setState(() {
       _themeMode =
@@ -35,7 +34,6 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
 
-      // 🌞 Tema claro bonito
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
@@ -55,7 +53,6 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
 
-      // 🌙 Tema oscuro elegante
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -82,7 +79,6 @@ class _MyAppState extends State<MyApp> {
         '/login': (_) => const LoginPage(),
         '/register': (_) => const RegisterPage(),
 
-        // 👇 Pasamos el callback y el estado del tema a HomePage
         '/home': (_) => HomePage(
               onToggleTheme: _toggleTheme,
               isDarkMode: isDark,

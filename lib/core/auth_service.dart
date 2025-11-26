@@ -1,4 +1,3 @@
-// lib/core/auth_service.dart
 class AppUser {
   final String nombre;
   final String email;
@@ -15,7 +14,6 @@ class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  /// Usuarios en memoria (no se guarda en BD ni en disco)
   final List<AppUser> _usuarios = [
     AppUser(
       nombre: 'Usuario Demo',
@@ -26,8 +24,6 @@ class AuthService {
 
   AppUser? currentUser;
 
-  /// Registra un usuario nuevo
-  /// Devuelve `null` si todo OK, o un mensaje de error si no.
   String? register({
     required String nombre,
     required String email,
@@ -59,7 +55,6 @@ class AuthService {
     return null;
   }
 
-  /// Inicia sesión
   String? login(String email, String password) {
     final user = _usuarios.firstWhere(
       (u) => u.email.toLowerCase() == email.toLowerCase(),
